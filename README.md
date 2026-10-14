@@ -20,7 +20,7 @@ Parking discovery and booking platform.
 
 ```bash
 cd backend
-cp .env.example .env        # set DATABASE_URL and JWT_SECRET
+cp .env.example .env        # set DATABASE_URL and JWT_SECRET (32+ random chars, required)
 npm install                 # also runs `prisma generate`
 npm run db:deploy           # apply migrations (or `npm run db:migrate` in dev)
 npm run db:seed             # optional demo data
@@ -28,6 +28,23 @@ npm run dev                 # http://localhost:5000
 ```
 
 Seed logins (password `Password@123`): `admin@parksetu.dev`, `owner@parksetu.dev`, `driver@parksetu.dev`.
+
+> **Never run `npm run db:seed` against a production database** - it creates an admin account with a publicly known password.
+
+Generate a `JWT_SECRET`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+#### Security notes
+
+- The server refuses to start without a strong `JWT_SECRET`.
+- API errors are generic unless `NODE_ENV=development`.
+- Login is limited to 10 failed attempts per 15 minutes per IP, registration to 10 per hour, and the API to 600 requests per 15 minutes.
+- The user's role is read from the database on every request, so deleted users and role changes apply immediately.
+- A migration enables row level security on all tables so Supabase's public REST API cannot read them; Prisma connects as the table owner and is unaffected.
+- If the API runs behind a reverse proxy, set `app.set("trust proxy", 1)` so rate limiting sees real client IPs.
 
 ### Frontend
 

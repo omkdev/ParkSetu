@@ -35,6 +35,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({
     success: false,
-    message: env.isProd ? "Internal server error" : String(err?.message ?? err),
+    message: env.exposeErrors ? String(err?.message ?? err) : "Internal server error",
   });
 };
