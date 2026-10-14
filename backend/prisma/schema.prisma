@@ -1,0 +1,98 @@
+// ParkSetu database schema
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  DRIVER
+  OWNER
+  ADMIN
+}
+
+enum VehicleType {
+  TWO_WHEELER
+  FOUR_WHEELER
+}
+
+enum BookingStatus {
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  phone        String?
+  passwordHash String
+  role         Role         @default(DRIVER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  lots         ParkingLot[]
+  bookings     Booking[]
+}
+
+model ParkingLot {
+  id          String       @id @default(uuid())
+  ownerId     String
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  address     String
+  city        String
+  latitude    Float?
+  longitude   Float?
+  twoWheelerRate  Decimal  @db.Decimal(10, 2)
+  fourWheelerRate Decimal  @db.Decimal(10, 2)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  slots       ParkingSlot[]
+  bookings    Booking[]
+
+  @@index([city])
+  @@index([ownerId])
+}
+
+model ParkingSlot {
+  id          String      @id @default(uuid())
+  lotId       String
+  lot         ParkingLot  @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  label       String
+  vehicleType VehicleType
+  isActive    Boolean     @default(true)
+  bookings    Booking[]
+
+  @@unique([lotId, label])
+  @@index([lotId, vehicleType])
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lotId         String
+  lot           ParkingLot    @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  slotId        String
+  slot          ParkingSlot   @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  vehicleNumber String
+  vehicleType   VehicleType
+  startTime     DateTime
+  endTime       DateTime
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  status        BookingStatus @default(CONFIRMED)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([lotId])
+  @@index([slotId, startTime, endTime])
+}
